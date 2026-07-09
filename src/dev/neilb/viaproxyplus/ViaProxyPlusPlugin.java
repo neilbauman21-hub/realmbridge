@@ -41,10 +41,13 @@ public class ViaProxyPlusPlugin extends ViaProxyPlugin {
     private static final int MUTED_WARNING_LIMIT = 5; // per message prefix
 
     private ScheduledExecutorService scheduler;
+    private RealmAutoRefresh realmAutoRefresh;
 
     @Override
     public void onEnable() {
         ViaProxy.EVENT_MANAGER.register(this);
+        this.realmAutoRefresh = new RealmAutoRefresh(this.getDataFolder());
+        ViaProxy.EVENT_MANAGER.register(this.realmAutoRefresh);
 
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             final Thread t = new Thread(r, "ViaProxyPlus-Resync");
@@ -79,6 +82,21 @@ public class ViaProxyPlusPlugin extends ViaProxyPlugin {
             event.setCancelled(true);
             final int count = this.resyncAllInventories();
             LOGGER.log(Level.INFO, "Forced inventory resync for " + count + " player(s).");
+        } else if (event.getCommand().equalsIgnoreCase("realm")) {
+            event.setCancelled(true);
+            if (event.getArgs().length == 0) {
+                final String current = this.realmAutoRefresh.getRealmNameFilter();
+                LOGGER.log(Level.INFO, current.isEmpty()
+                        ? "No realm filter set (auto-picks if the account has exactly one realm). Set with: realm <name>"
+                        : "Realm filter: '" + current + "'. Change with: realm <name>, clear with: realm clear");
+            } else if (event.getArgs()[0].equalsIgnoreCase("clear")) {
+                this.realmAutoRefresh.setRealmNameFilter("");
+                LOGGER.log(Level.INFO, "Realm filter cleared.");
+            } else {
+                final String name = String.join(" ", event.getArgs());
+                this.realmAutoRefresh.setRealmNameFilter(name);
+                LOGGER.log(Level.INFO, "Realm filter set to '" + name + "'. Connections to NetherNet targets now auto-resolve this realm.");
+            }
         }
     }
 
