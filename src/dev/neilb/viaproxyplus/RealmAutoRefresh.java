@@ -102,8 +102,8 @@ public final class RealmAutoRefresh {
             }
 
             final RealmsJoinInformation join = service.joinWorldAsync(realm).join();
-            if (join.getNetworkProtocol() == RealmsJoinInformation.PROTOCOL_NETHERNET_JSONRPC
-                    || join.getNetworkProtocol() == RealmsJoinInformation.PROTOCOL_NETHERNET) {
+            if (RealmsJoinInformation.PROTOCOL_NETHERNET_JSONRPC.equals(join.getNetworkProtocol())
+                    || RealmsJoinInformation.PROTOCOL_NETHERNET.equals(join.getNetworkProtocol())) {
                 this.cachedAddress = join.getAddress();
                 this.cachedAt = now;
                 event.setServerAddress(new NetherNetJsonRpcAddress(join.getAddress()));

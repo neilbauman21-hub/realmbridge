@@ -179,8 +179,19 @@ public class InventoryPackets {
             final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
             final Container container = inventoryTracker.getContainerClientbound((byte) containerId, containerName, storageItem);
             final boolean vppApplied = container != null && container.setItems(items);
+            int vppBedrockNonEmpty = 0;
+            for (final BedrockItem vppIt : items) {
+                if (vppIt != null && !vppIt.isEmpty()) vppBedrockNonEmpty++;
+            }
+            int vppJavaNonEmpty = 0;
+            if (container != null) {
+                for (final com.viaversion.viaversion.api.minecraft.item.Item vppIt : container.getJavaItems()) {
+                    if (vppIt != null && !vppIt.isEmpty()) vppJavaNonEmpty++;
+                }
+            }
             ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] INVENTORY_CONTENT containerId=" + containerId
-                    + " applied=" + vppApplied + " state=" + wrapper.user().getProtocolInfo().getServerState() + " items=" + items.length);
+                    + " applied=" + vppApplied + " state=" + wrapper.user().getProtocolInfo().getServerState() + " items=" + items.length
+                    + " bedrockNonEmpty=" + vppBedrockNonEmpty + " javaNonEmpty=" + vppJavaNonEmpty);
             if (vppApplied && wrapper.user().getProtocolInfo().getServerState() != com.viaversion.viaversion.api.protocol.packet.State.PLAY) {
                 wrapper.cancel();
             } else if (vppApplied) {
