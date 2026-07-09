@@ -18,6 +18,34 @@ public final class VppResync {
     private VppResync() {
     }
 
+    // Diagnostic: track recently player-broken block positions per connection so
+    // the UPDATE_BLOCK handler can detect server-side break reverts.
+    private static final java.util.concurrent.ConcurrentHashMap<UserConnection, java.util.concurrent.ConcurrentHashMap<Long, Long>> RECENT_BREAKS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static long packPosition(final com.viaversion.viaversion.api.minecraft.BlockPosition pos) {
+        return ((long) (pos.x() & 0x3FFFFFF) << 38) | ((long) (pos.z() & 0x3FFFFFF) << 12) | (pos.y() & 0xFFF);
+    }
+
+    public static void noteBroken(final UserConnection user, final com.viaversion.viaversion.api.minecraft.BlockPosition pos) {
+        final java.util.concurrent.ConcurrentHashMap<Long, Long> map = RECENT_BREAKS.computeIfAbsent(user, u -> new java.util.concurrent.ConcurrentHashMap<>());
+        final long now = System.currentTimeMillis();
+        map.put(packPosition(pos), now);
+        if (map.size() > 64) {
+            map.entrySet().removeIf(e -> now - e.getValue() > 10_000);
+        }
+    }
+
+    /** Milliseconds since this position was broken by the player, or -1 if not recent. */
+    public static long brokenAgoMillis(final UserConnection user, final com.viaversion.viaversion.api.minecraft.BlockPosition pos) {
+        final java.util.concurrent.ConcurrentHashMap<Long, Long> map = RECENT_BREAKS.get(user);
+        if (map == null) return -1;
+        final Long ts = map.get(packPosition(pos));
+        if (ts == null) return -1;
+        final long ago = System.currentTimeMillis() - ts;
+        return ago <= 10_000 ? ago : -1;
+    }
+
     public static void scheduleInventoryResync(final UserConnection user) {
         final io.netty.channel.Channel channel = user.getChannel();
         if (channel == null || !channel.isActive()) {

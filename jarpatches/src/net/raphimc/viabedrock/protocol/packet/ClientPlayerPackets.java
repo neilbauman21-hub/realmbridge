@@ -183,6 +183,12 @@ public class ClientPlayerPackets {
                         return;
                     }
 
+                    final float vppDx = clientPlayer.position().x() - position.x();
+                    final float vppDy = clientPlayer.position().y() - position.y();
+                    final float vppDz = clientPlayer.position().z() - position.z();
+                    final double vppDist = Math.sqrt(vppDx * vppDx + vppDy * vppDy + vppDz * vppDz);
+                    ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                            "[VP+ diag] movement correction dist=%.3f tick=%d age=%d", vppDist, tick, clientPlayer.age()));
                     clientPlayer.setPosition(position);
                     clientPlayer.setOnGround(onGround);
                     clientPlayer.writePlayerPositionPacketToClient(wrapper, Relative.union(Relative.ROTATION, Relative.VELOCITY), true);
@@ -347,6 +353,7 @@ public class ClientPlayerPackets {
                         clientPlayer.addAuthInputBlockAction(new ClientPlayerEntity.AuthInputBlockAction(PlayerActionType.AbortDestroyBlock, position, 0));
                     }
 
+                    net.raphimc.viabedrock.experimental.VppResync.noteBroken(wrapper.user(), position); // VP+ diag
                     chunkTracker.handleBlockChange(position, 0, chunkTracker.bedrockAirId());
                     PacketFactory.sendJavaBlockUpdate(wrapper.user(), position, ProtocolConstants.JAVA_AIR_ID);
                 }
