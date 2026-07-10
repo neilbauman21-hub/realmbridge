@@ -1,46 +1,59 @@
 # RealmBridge
 
-**Play on Bedrock Minecraft Realms from Java Edition** — invite codes, one-click
-join, Fabric mods (Baritone, Litematica, ...) and all.
+**Play on Bedrock Minecraft Realms from Java Edition.** Invite codes, one-click
+join, and your Fabric mods (Baritone, Litematica, Sodium, ...) — on your
+friends' Bedrock Realm.
 
-Java and Bedrock can't normally share a Realm. RealmBridge glues them together:
+Java and Bedrock normally can't share a Realm. RealmBridge glues them together:
 a patched [ViaProxy](https://github.com/ViaVersion/ViaProxy)/[ViaBedrock](https://github.com/RaphiMC/ViaBedrock)
-translates the protocol, a plugin keeps the connection seamless, and a Fabric
-mod puts the whole thing behind a button in your Multiplayer screen.
+translates the protocol live, a companion plugin makes it feel vanilla
+(instant item pickups, smooth movement, auto realm wake/reconnect), and a
+Fabric mod wraps everything behind one button in your Multiplayer screen.
 
-## The pieces
+## Install (2 minutes)
+
+1. Install [Fabric](https://fabricmc.net/use/installer/) for Minecraft 26.1.x
+   and put [fabric-api](https://modrinth.com/mod/fabric-api) +
+   **`realmbridge-<version>.jar`** (from [Releases](../../releases/latest))
+   into your `mods/` folder.
+2. Launch the game → **Multiplayer → Bedrock Realms** (top-right button).
+3. **Sign in with Microsoft** (one time — a code + browser button appear;
+   use the account that owns/joins the Bedrock realm).
+4. Paste a **realm invite code** → your realm appears → **click it**.
+
+The mod downloads the bridge (~45 MB, one time) to `~/.bedrock-realm-bridge`,
+signs it in with your account automatically, wakes the realm, and connects you.
+Java 17+ is required (the Minecraft launcher's bundled Java works).
+
+## Good to know
+
+- **First join after the realm slept** can time out once while the realm
+  server boots — just click again.
+- The bridge keeps running while you play; `/realmbridge stop` shuts it down.
+- Client-side mods work normally. Server-dependent mods can't (there is no
+  Java server). Movement cheats will rubber-band — Bedrock realms are
+  server-authoritative.
+- Lighting is approximate (uniform bright): light translation isn't
+  implemented upstream yet.
+- Terminal-only alternative (macOS/Linux): grab
+  `bedrock-realm-bridge.tar.gz` from Releases —
+  `./bedrock-realm play <invite-code>`.
+
+## Repo layout / building
 
 | dir | what | artifact |
 |-----|------|----------|
-| `mod/` | Fabric mod (MC 26.1.x): "Bedrock Realms" button, Microsoft sign-in, invite codes, auto-connect | `realmbridge-<v>.jar` |
-| `proxy/` | ViaProxy patch set + ViaProxyPlus plugin: crash fixes, item-pickup emulation, movement smoothing, realm auto-refresh/auto-wake | `ViaProxy-patched.jar`, `ViaProxyPlus.jar` |
-| `cli/` | Python CLI + portable bundle for terminal users / Linux friends | `bedrock-realm-bridge.tar.gz` |
-
-## Quick start (mod, recommended)
-
-1. Install Fabric for Minecraft 26.1.x with [fabric-api](https://modrinth.com/mod/fabric-api),
-   drop `realmbridge-<v>.jar` in `mods/`.
-2. Unpack `bedrock-realm-bridge.tar.gz` and run `./bedrock-realm setup` once
-   (installs the patched ViaProxy + plugin to `~/.bedrock-realm-bridge`), then add
-   your Microsoft account in the ViaProxy window as a **Bedrock** account (one time).
-3. In Minecraft: **Multiplayer → Bedrock Realms** → sign in → paste an invite
-   code or click your realm. That's it.
-
-## Quick start (terminal only)
+| `mod/` | Fabric mod: UI, Microsoft sign-in, invite codes, bridge bootstrap, auto-connect | `realmbridge-<v>.jar` |
+| `proxy/` | ViaProxy patch set + ViaProxyPlus plugin (documented in `jarpatches/src` + git history) | `ViaProxy-patched.jar`, `ViaProxyPlus.jar` |
+| `cli/` | Python CLI + portable bundle | `bedrock-realm-bridge.tar.gz` |
 
 ```bash
-tar -xzf bedrock-realm-bridge.tar.gz && cd bedrock-realm-bridge
-./bedrock-realm play <realm-invite-code>
+./build-all.sh   # JDK 17+, gradle, python3 → everything lands in dist/
 ```
 
-## Build everything
+## Credits & license
 
-```bash
-./build-all.sh   # needs JDK 17+, gradle, python3
-```
-
-## Notes
-
-- Patched sources for ViaProxy/ViaBedrock live in `proxy/jarpatches/src` — each
-  change is documented in the git history; several fixes are being upstreamed.
-- GPLv3 (contains ViaBedrock-derived sources).
+Built on [ViaProxy](https://github.com/ViaVersion/ViaProxy),
+[ViaBedrock](https://github.com/RaphiMC/ViaBedrock) and
+[MinecraftAuth](https://github.com/RaphiMC/MinecraftAuth) by RK_01/RaphiMC &
+contributors. Several fixes from this repo are headed upstream. GPLv3.

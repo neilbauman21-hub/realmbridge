@@ -165,10 +165,12 @@ public final class RealmBridgeScreen extends Screen {
         this.busy = true;
         this.status("Waking '" + realm.getName() + "'...");
         this.core.async(() -> {
+            this.core.runner().ensureInstalled(this::status);
+            final int accountIndex = this.core.runner().ensureAccount(this.core.auth().serialized());
             final RealmsJoinInformation join = this.core.realms().joinWorld(realm);
             this.core.runner().setRealmFilter(realm.getName());
             this.status("Starting bridge...");
-            this.core.runner().start(join.getAddress());
+            this.core.runner().start(join.getAddress(), accountIndex);
             this.busy = false;
             this.minecraft.execute(() -> ConnectScreen.startConnecting(
                     this.parent, this.minecraft,

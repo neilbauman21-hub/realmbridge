@@ -55,6 +55,21 @@ public final class BridgeAuth {
         return new BedrockRealmsService(this.httpClient, BEDROCK_VERSION, manager.getRealmsXstsToken());
     }
 
+    /** Serialized auth-manager state (same shape ViaProxy stores), or null if not signed in. */
+    public synchronized JsonObject serialized() {
+        if (this.authManager == null) {
+            try {
+                if (Files.exists(this.authFile)) {
+                    return GSON.fromJson(Files.readString(this.authFile, StandardCharsets.UTF_8), JsonObject.class);
+                }
+            } catch (Exception e) {
+                RealmBridgeCore.LOGGER.error("Failed to read persisted auth tokens", e);
+            }
+            return null;
+        }
+        return BedrockAuthManager.toJson(this.authManager);
+    }
+
     public synchronized void logout() throws Exception {
         this.authManager = null;
         Files.deleteIfExists(this.authFile);

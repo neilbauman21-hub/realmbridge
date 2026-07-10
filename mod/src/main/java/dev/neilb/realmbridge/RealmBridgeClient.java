@@ -81,11 +81,13 @@ public final class RealmBridgeClient implements ClientModInitializer {
                 this.chat("Pick a realm: " + worlds.stream().map(RealmsServer::getName).toList());
                 return;
             }
+            this.core.runner().ensureInstalled(this::chat);
+            final int accountIndex = this.core.runner().ensureAccount(this.core.auth().serialized());
             this.chat("Waking '" + realm.getName() + "'...");
             final RealmsJoinInformation join = service.joinWorld(realm);
             this.core.runner().setRealmFilter(realm.getName());
             this.chat("Starting bridge...");
-            this.core.runner().start(join.getAddress());
+            this.core.runner().start(join.getAddress(), accountIndex);
             this.chat("Ready! Multiplayer -> Direct Connection -> " + ViaProxyRunner.BIND);
         }, e -> this.chat("Error: " + e.getMessage()));
     }
