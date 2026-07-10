@@ -17,6 +17,8 @@ dependencies {
 
     // Realms API + Microsoft auth (same library ViaProxy uses), bundled jar-in-jar
     implementation include("net.raphimc:MinecraftAuth:${project.minecraftauth_version}")
+    include("net.lenni0451.commons:httpclient:1.9.2")
+    include("net.lenni0451.commons:gson:1.9.2")
 }
 
 java {
