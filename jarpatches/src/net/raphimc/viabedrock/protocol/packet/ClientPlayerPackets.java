@@ -183,18 +183,37 @@ public class ClientPlayerPackets {
                         return;
                     }
 
-                    final float vppDx = clientPlayer.position().x() - position.x();
-                    final float vppDy = clientPlayer.position().y() - position.y();
-                    final float vppDz = clientPlayer.position().z() - position.z();
-                    final double vppDist = Math.sqrt(vppDx * vppDx + vppDy * vppDy + vppDz * vppDz);
-                    final boolean vppSuppress = net.raphimc.viabedrock.experimental.VppResync.shouldSuppressCorrection(vppDist);
-                    ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
-                            "[VP+ diag] movement correction dist=%.3f tick=%d age=%d %s", vppDist, tick, clientPlayer.age(),
-                            vppSuppress ? "SUPPRESSED" : "applied"));
-                    if (vppSuppress) {
-                        wrapper.cancel();
-                        return;
+                    // VP+ history-based correction: the server corrects our position at an
+                    // old tick. Teleporting to that stale position yanks the player back by
+                    // however far they moved since. Instead compute the server-vs-client error
+                    // AT that tick and apply only the error to the current position.
+                    final float[] vppHist = net.raphimc.viabedrock.experimental.VppResync.getTickPosition(wrapper.user(), tick);
+                    if (vppHist != null) {
+                        final float vppEx = position.x() - vppHist[0];
+                        final float vppEy = position.y() - vppHist[1];
+                        final float vppEz = position.z() - vppHist[2];
+                        final double vppErr = Math.sqrt(vppEx * vppEx + vppEy * vppEy + vppEz * vppEz);
+                        if (vppErr < 0.03) { // server effectively agrees; no client action needed
+                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                                    "[VP+ diag] correction tick=%d err=%.3f AGREED (skipped)", tick, vppErr));
+                            wrapper.cancel();
+                            return;
+                        }
+                        if (vppErr < 4.0) {
+                            final Position3f vppAdjusted = new Position3f(
+                                    clientPlayer.position().x() + vppEx,
+                                    clientPlayer.position().y() + vppEy,
+                                    clientPlayer.position().z() + vppEz);
+                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                                    "[VP+ diag] correction tick=%d err=%.3f ADJUSTED (delta applied at current pos)", tick, vppErr));
+                            clientPlayer.setPosition(vppAdjusted);
+                            clientPlayer.setOnGround(onGround);
+                            clientPlayer.writePlayerPositionPacketToClient(wrapper, Relative.union(Relative.ROTATION, Relative.VELOCITY), true);
+                            return;
+                        }
                     }
+                    ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                            "[VP+ diag] correction tick=%d age=%d HARD teleport (history=%s)", tick, clientPlayer.age(), vppHist != null));
                     clientPlayer.setPosition(position);
                     clientPlayer.setOnGround(onGround);
                     clientPlayer.writePlayerPositionPacketToClient(wrapper, Relative.union(Relative.ROTATION, Relative.VELOCITY), true);
@@ -475,6 +494,8 @@ public class ClientPlayerPackets {
             final boolean prevOnGround = clientPlayer.prevOnGround();
             final Set<InputFlag> prevInputFlags = clientPlayer.prevInputFlags();
             clientPlayer.tick();
+            net.raphimc.viabedrock.experimental.VppResync.recordTickPosition(wrapper.user(), clientPlayer.age(),
+                    clientPlayer.position().x(), clientPlayer.position().y(), clientPlayer.position().z()); // VP+ history
 
             if (prevOnGround && clientPlayer.inputFlags().contains(InputFlag.JUMP)) {
                 clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.StartJumping);

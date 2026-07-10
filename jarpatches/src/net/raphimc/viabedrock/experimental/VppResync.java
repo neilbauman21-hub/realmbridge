@@ -36,6 +36,26 @@ public final class VppResync {
         }
     }
 
+    // Per-tick client position history, used to apply server movement
+    // corrections as a delta against where the client actually was at that
+    // tick instead of hard-teleporting to a stale position.
+    private static final java.util.concurrent.ConcurrentHashMap<UserConnection, java.util.concurrent.ConcurrentSkipListMap<Long, float[]>> TICK_POSITIONS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void recordTickPosition(final UserConnection user, final long tick, final float x, final float y, final float z) {
+        final java.util.concurrent.ConcurrentSkipListMap<Long, float[]> map =
+                TICK_POSITIONS.computeIfAbsent(user, u -> new java.util.concurrent.ConcurrentSkipListMap<>());
+        map.put(tick, new float[]{x, y, z});
+        while (map.size() > 200) {
+            map.pollFirstEntry();
+        }
+    }
+
+    public static float[] getTickPosition(final UserConnection user, final long tick) {
+        final java.util.concurrent.ConcurrentSkipListMap<Long, float[]> map = TICK_POSITIONS.get(user);
+        return map == null ? null : map.get(tick);
+    }
+
     // Movement-correction deadband: suppress small server rewinds so the client
     // isn't visibly yanked, but periodically let one through to re-anchor, and
     // always apply large ones.
