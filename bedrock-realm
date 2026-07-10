@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Launcher: bootstraps a local venv with dependencies on first run.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="$HERE/.venv/bin/python"
+if [[ ! -x "$PY" ]]; then
+  if "$(command -v python3)" -c "import requests" 2>/dev/null; then
+    PY="$(command -v python3)"
+  else
+    echo "First run: setting up Python environment..."
+    python3 -m venv "$HERE/.venv"
+    "$HERE/.venv/bin/pip" -q install -r "$HERE/requirements.txt"
+    PY="$HERE/.venv/bin/python"
+  fi
+fi
+cd "$HERE"
+exec "$PY" -m realmbridge "$@"
