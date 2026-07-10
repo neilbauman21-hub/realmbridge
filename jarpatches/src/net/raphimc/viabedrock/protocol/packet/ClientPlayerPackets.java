@@ -194,7 +194,7 @@ public class ClientPlayerPackets {
                         final float vppEz = position.z() - vppHist[2];
                         final double vppErr = Math.sqrt(vppEx * vppEx + vppEy * vppEy + vppEz * vppEz);
                         if (vppErr < 0.03) { // server effectively agrees; no client action needed
-                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.FINE, String.format(
                                     "[VP+ diag] correction tick=%d err=%.3f AGREED (skipped)", tick, vppErr));
                             wrapper.cancel();
                             return;
@@ -210,7 +210,7 @@ public class ClientPlayerPackets {
                                     clientPlayer.position().x() + vppEx * vppScale,
                                     clientPlayer.position().y() + vppEy * vppScale,
                                     clientPlayer.position().z() + vppEz * vppScale);
-                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.FINE, String.format(
                                     "[VP+ diag] correction tick=%d err=%.3f (ex=%.2f ey=%.2f ez=%.2f) ADJUSTED x%.2f", tick, vppErr, vppEx, vppEy, vppEz, vppScale));
                             clientPlayer.setPosition(vppAdjusted);
                             clientPlayer.setOnGround(onGround);
@@ -218,7 +218,7 @@ public class ClientPlayerPackets {
                             return;
                         }
                     }
-                    ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
+                    ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.FINE, String.format(
                             "[VP+ diag] correction tick=%d age=%d HARD teleport (history=%s)", tick, clientPlayer.age(), vppHist != null));
                     clientPlayer.setPosition(position);
                     clientPlayer.setOnGround(onGround);

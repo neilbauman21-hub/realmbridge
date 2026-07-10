@@ -320,7 +320,7 @@ public class ExperimentalFeatures {
         });
         protocol.registerClientbound(ClientboundBedrockPackets.INVENTORY_TRANSACTION, null, wrapper -> {
             wrapper.cancel();
-            ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx handler ENTERED");
+            ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] tx handler ENTERED");
             final InventoryTransactionRewriter inventoryTransactionRewriter = wrapper.user().get(InventoryTransactionRewriter.class);
             final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
 
@@ -332,7 +332,7 @@ public class ExperimentalFeatures {
                 return;
             }
 
-            ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx parsed: reqId=" + inventoryTransaction.legacyRequestId()
+            ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] tx parsed: reqId=" + inventoryTransaction.legacyRequestId()
                     + " type=" + inventoryTransaction.transactionType()
                     + " actions=" + (inventoryTransaction.actions() == null ? "null" : inventoryTransaction.actions().size()));
 
@@ -343,7 +343,7 @@ public class ExperimentalFeatures {
             boolean vppTouched = false;
             if (inventoryTransaction.actions() != null && !inventoryTransaction.actions().isEmpty()) {
                 for (InventoryActionData action : inventoryTransaction.actions()) {
-                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx action: source=" + action.source().type()
+                    ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] tx action: source=" + action.source().type()
                             + " containerId=" + action.source().containerId() + " slot=" + action.slot()
                             + " from=" + (action.fromItem() == null || action.fromItem().isEmpty() ? "empty" : "item")
                             + " to=" + (action.toItem() == null || action.toItem().isEmpty() ? "empty" : "item(x" + action.toItem().amount() + ")"));
