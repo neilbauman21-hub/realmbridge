@@ -319,45 +319,53 @@ public class ExperimentalFeatures {
             );
         });
         protocol.registerClientbound(ClientboundBedrockPackets.INVENTORY_TRANSACTION, null, wrapper -> {
-            final InventoryTransactionRewriter inventoryTransactionRewriter = wrapper.user().get(InventoryTransactionRewriter.class);
-            InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
-
             wrapper.cancel();
-            BedrockInventoryTransaction inventoryTransaction = wrapper.read(inventoryTransactionRewriter.getInventoryTransactionType());
+            ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx handler ENTERED");
+            final InventoryTransactionRewriter inventoryTransactionRewriter = wrapper.user().get(InventoryTransactionRewriter.class);
+            final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
 
-            if (inventoryTransaction.legacyRequestId() != 0) {
-                // Ignore legacy inventory transactions for now
+            final BedrockInventoryTransaction inventoryTransaction;
+            try {
+                inventoryTransaction = wrapper.read(inventoryTransactionRewriter.getInventoryTransactionType());
+            } catch (Throwable e) {
+                ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "[VP+ diag] tx PARSE FAILED: " + e);
                 return;
             }
 
-            if (inventoryTransaction.actions() != null && !inventoryTransaction.actions().isEmpty()) {
-                for (InventoryActionData vppA : inventoryTransaction.actions()) {
-                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx action: source=" + vppA.source().type()
-                            + " containerId=" + vppA.source().containerId() + " slot=" + vppA.slot()
-                            + " from=" + (vppA.fromItem() == null || vppA.fromItem().isEmpty() ? "empty" : "item")
-                            + " to=" + (vppA.toItem() == null || vppA.toItem().isEmpty() ? "empty" : "item"));
-                }
-                for (InventoryActionData action : inventoryTransaction.actions()) {
-                    if (action.source().type() == InventorySourceType.ContainerInventory) {
-                        Container container = inventoryTracker.getContainerClientbound((byte) action.source().containerId(), null, null);
+            ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx parsed: reqId=" + inventoryTransaction.legacyRequestId()
+                    + " type=" + inventoryTransaction.transactionType()
+                    + " actions=" + (inventoryTransaction.actions() == null ? "null" : inventoryTransaction.actions().size()));
 
-                        if (container != null) {
-                            container.setItem(action.slot(), action.toItem());
-                            PacketFactory.sendJavaContainerSetContent(wrapper.user(),  container);
-                        } else {
-                            ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Received inventory action for unknown container ID: " + action.source().containerId());
-                        }
+            if (inventoryTransaction.legacyRequestId() != 0) {
+                return;
+            }
+
+            boolean vppTouched = false;
+            if (inventoryTransaction.actions() != null && !inventoryTransaction.actions().isEmpty()) {
+                for (InventoryActionData action : inventoryTransaction.actions()) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx action: source=" + action.source().type()
+                            + " containerId=" + action.source().containerId() + " slot=" + action.slot()
+                            + " from=" + (action.fromItem() == null || action.fromItem().isEmpty() ? "empty" : "item")
+                            + " to=" + (action.toItem() == null || action.toItem().isEmpty() ? "empty" : "item(x" + action.toItem().amount() + ")"));
+
+                    Container container = inventoryTracker.getContainerClientbound((byte) action.source().containerId(), null, null);
+                    // VP+: pickups target a player slot the container lookup can't resolve; fall
+                    // back to the player inventory container when the slot is in range.
+                    if (container == null && action.slot() >= 0 && action.slot() < inventoryTracker.getInventoryContainer().size()) {
+                        container = inventoryTracker.getInventoryContainer();
+                    }
+                    if (container != null && action.toItem() != null && !action.toItem().isEmpty()) {
+                        container.setItem(action.slot(), action.toItem());
+                        PacketFactory.sendJavaContainerSetContent(wrapper.user(), container);
+                        vppTouched = true;
                     }
                 }
             }
 
-            switch (inventoryTransaction.transactionType()) {
-                case NormalTransaction -> {
-                    break; // Nothing to do here for now
-                }
-                default -> {
-                    ViaBedrock.getPlatform().getLogger().log(Level.WARNING, "Received unsupported inventory transaction type: " + inventoryTransaction.transactionType());
-                }
+            // VP+: if no action produced an inventory write, push the current tracked player
+            // inventory so any server-side change still reaches the client promptly.
+            if (!vppTouched) {
+                PacketFactory.sendJavaContainerSetContent(wrapper.user(), inventoryTracker.getInventoryContainer());
             }
         });
         protocol.registerClientbound(ClientboundBedrockPackets.SET_ENTITY_LINK, ClientboundPackets26_1.SET_PASSENGERS, wrapper -> {
