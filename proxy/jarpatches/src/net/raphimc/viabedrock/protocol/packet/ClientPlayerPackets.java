@@ -548,7 +548,7 @@ public class ClientPlayerPackets {
             if (clientPlayer.inputFlags().contains(InputFlag.SHIFT)) {
                 clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.SneakDown, PlayerAuthInputPacket_InputData.Sneaking, PlayerAuthInputPacket_InputData.WantDown, PlayerAuthInputPacket_InputData.SneakCurrentRaw);
             }
-            if (clientPlayer.inputFlags().contains(InputFlag.SPRINT)) {
+            if (clientPlayer.inputFlags().contains(InputFlag.SPRINT) || clientPlayer.isSprinting()) {
                 clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.SprintDown, PlayerAuthInputPacket_InputData.Sprinting);
             }
             if (clientPlayer.inputFlags().contains(InputFlag.JUMP) && !prevInputFlags.contains(InputFlag.JUMP)) {
@@ -623,7 +623,25 @@ public class ClientPlayerPackets {
                     }
                 }
             }
-            wrapper.write(BedrockTypes.POSITION_2F, new Position2f(0F, 0F)); // analog move vector
+            Position2f vppAnalog = new Position2f(0F, 0F);
+            final Position2f vppKeyed = MathUtil.calculateMovementDirections(clientPlayer.authInputData(), clientPlayer.isSneaking());
+            if (vppKeyed.x() == 0F && vppKeyed.y() == 0F) {
+                final float vppDxH = positionDelta.x();
+                final float vppDzH = positionDelta.z();
+                if (Math.abs(vppDxH) > 0.03F || Math.abs(vppDzH) > 0.03F) {
+                    final double vppYawRad = Math.toRadians(clientPlayer.rotation().y());
+                    final double vppCos = Math.cos(vppYawRad);
+                    final double vppSin = Math.sin(vppYawRad);
+                    float vppStrafe = (float) (vppDxH * vppCos + vppDzH * vppSin);
+                    float vppForward = (float) (-vppDxH * vppSin + vppDzH * vppCos);
+                    final float vppMax = Math.max(Math.abs(vppStrafe), Math.abs(vppForward));
+                    if (vppMax > 0.0001F) {
+                        final float vppScale = Math.min(1F, vppMax / 0.2F) / vppMax; // full deflection at walk speed
+                        vppAnalog = new Position2f(vppStrafe * vppScale, vppForward * vppScale);
+                    }
+                }
+            }
+            wrapper.write(BedrockTypes.POSITION_2F, vppAnalog); // analog move vector (VP+: derived from real motion when keys idle)
             wrapper.write(BedrockTypes.POSITION_3F, MathUtil.calculateCameraOrientation(clientPlayer.rotation().y(), clientPlayer.rotation().x())); // camera orientation
             wrapper.write(BedrockTypes.POSITION_2F, MathUtil.calculateMovementDirections(clientPlayer.authInputData(), false)); // raw move vector
 
