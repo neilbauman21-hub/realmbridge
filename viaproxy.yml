@@ -1,5 +1,5 @@
 name: ViaProxyPlus
-version: 0.2.0
+version: 0.3.0
 author: Neildude
 main: dev.neilb.viaproxyplus.ViaProxyPlusPlugin
 min-version: 3.4.0

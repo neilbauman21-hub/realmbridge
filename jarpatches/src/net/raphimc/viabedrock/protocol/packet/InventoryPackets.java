@@ -167,7 +167,7 @@ public class InventoryPackets {
         protocol.registerClientbound(ClientboundBedrockPackets.INVENTORY_CONTENT, ClientboundPackets26_1.CONTAINER_SET_CONTENT, wrapper -> {
             final ItemRewriter itemRewriter = wrapper.user().get(ItemRewriter.class);
             if (itemRewriter == null) { // VP+: packet arrived before START_GAME (no item palette yet); real Bedrock clients ignore these too
-                ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] pre-palette inventory packet dropped (state=" + wrapper.user().getProtocolInfo().getServerState() + ")");
+                ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] pre-palette inventory packet dropped (state=" + wrapper.user().getProtocolInfo().getServerState() + ")");
                 wrapper.cancel();
                 return;
             }
@@ -189,7 +189,7 @@ public class InventoryPackets {
                     if (vppIt != null && !vppIt.isEmpty()) vppJavaNonEmpty++;
                 }
             }
-            ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] INVENTORY_CONTENT containerId=" + containerId
+            ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] INVENTORY_CONTENT containerId=" + containerId
                     + " applied=" + vppApplied + " state=" + wrapper.user().getProtocolInfo().getServerState() + " items=" + items.length
                     + " bedrockNonEmpty=" + vppBedrockNonEmpty + " javaNonEmpty=" + vppJavaNonEmpty);
             if (vppApplied && wrapper.user().getProtocolInfo().getServerState() != com.viaversion.viaversion.api.protocol.packet.State.PLAY) {
@@ -203,7 +203,7 @@ public class InventoryPackets {
         protocol.registerClientbound(ClientboundBedrockPackets.INVENTORY_SLOT, ClientboundPackets26_1.CONTAINER_SET_SLOT, wrapper -> {
             final ItemRewriter itemRewriter = wrapper.user().get(ItemRewriter.class);
             if (itemRewriter == null) { // VP+: packet arrived before START_GAME (no item palette yet); real Bedrock clients ignore these too
-                ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] pre-palette inventory packet dropped (state=" + wrapper.user().getProtocolInfo().getServerState() + ")");
+                ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] pre-palette inventory packet dropped (state=" + wrapper.user().getProtocolInfo().getServerState() + ")");
                 wrapper.cancel();
                 return;
             }
@@ -216,7 +216,7 @@ public class InventoryPackets {
             final InventoryTracker inventoryTracker = wrapper.user().get(InventoryTracker.class);
             final Container container = inventoryTracker.getContainerClientbound((byte) containerId, containerName, storageItem);
             final boolean vppApplied = container != null && container.setItem(slot, item);
-            ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] INVENTORY_SLOT containerId=" + containerId
+            ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] INVENTORY_SLOT containerId=" + containerId
                     + " slot=" + slot + " applied=" + vppApplied + " state=" + wrapper.user().getProtocolInfo().getServerState());
             if (vppApplied && wrapper.user().getProtocolInfo().getServerState() != com.viaversion.viaversion.api.protocol.packet.State.PLAY) {
                 wrapper.cancel();

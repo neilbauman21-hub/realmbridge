@@ -608,7 +608,7 @@ public class ClientPlayerPackets {
             wrapper.write(BedrockTypes.UNSIGNED_VAR_LONG, (long) clientPlayer.age()); // tick
             wrapper.write(BedrockTypes.POSITION_3F, velocity); // delta
             if (clientPlayer.authInputData().contains(PlayerAuthInputPacket_InputData.PerformBlockActions)) {
-                ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, "[VP+ diag] sending "
+                ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.FINE, "[VP+ diag] sending "
                         + clientPlayer.authInputBlockActions().size() + " block action(s): "
                         + clientPlayer.authInputBlockActions().stream().map(a -> a.action().name()).toList());
                 wrapper.write(BedrockTypes.VAR_INT, clientPlayer.authInputBlockActions().size()); // player block actions count

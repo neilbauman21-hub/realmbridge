@@ -183,11 +183,11 @@ public class BedrockProtocol extends StatelessTransitionProtocol<ClientboundBedr
             }
             switch (packet) {
                 case ADD_ITEM_ENTITY, TAKE_ITEM_ENTITY, CONTAINER_OPEN, ITEM_STACK_RESPONSE ->
-                        ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] recv " + packet + " (state=" + serverState + ")");
+                        ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] recv " + packet + " (state=" + serverState + ")");
                 case INVENTORY_TRANSACTION -> {
                     final ByteBuf vppBuf = ((PacketWrapperImpl) wrapper).getInputBuffer();
                     final int vppLen = Math.min(256, vppBuf.readableBytes());
-                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] recv INVENTORY_TRANSACTION (state=" + serverState
+                    ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] recv INVENTORY_TRANSACTION (state=" + serverState
                             + ", " + vppBuf.readableBytes() + " bytes): " + ByteBufUtil.hexDump(vppBuf, vppBuf.readerIndex(), vppLen));
                 }
                 default -> { }

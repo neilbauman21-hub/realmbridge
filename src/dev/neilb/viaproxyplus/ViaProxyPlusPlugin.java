@@ -37,6 +37,11 @@ public class ViaProxyPlusPlugin extends ViaProxyPlugin {
             "Missing waterlogged block state",
             "Invalid layer 2 block state",
             "Received packet", // "... outside PLAY state. Ignoring it." join noise
+            "Received sub chunk that was not requested",
+            "Received OWNER for non-TAMEABLE_ANIMAL",
+            "Received TARGET for non-GUARDIAN",
+            "Received non-zero VARIANT",
+            "Failed to find owner entity",
     };
     private static final int MUTED_WARNING_LIMIT = 5; // per message prefix
 
