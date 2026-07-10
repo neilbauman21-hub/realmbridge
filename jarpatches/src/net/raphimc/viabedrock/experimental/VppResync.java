@@ -56,6 +56,61 @@ public final class VppResync {
         return map == null ? null : map.get(tick);
     }
 
+    // Bedrock legacy-inventory pickup emulation. On Realms, item pickups send
+    // TAKE_ITEM_ENTITY plus a WorldInteraction-only transaction - the client is
+    // expected to insert the item into its own inventory locally. Real Bedrock
+    // clients do; we emulate the same insertion (merge stacks, then first empty
+    // slot, hotbar first). Server-side full content pushes correct any drift.
+    private static final java.util.concurrent.ConcurrentHashMap<UserConnection, java.util.concurrent.ConcurrentHashMap<Long, net.raphimc.viabedrock.protocol.model.BedrockItem>> ITEM_ENTITIES =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void rememberItemEntity(final UserConnection user, final long runtimeId, final net.raphimc.viabedrock.protocol.model.BedrockItem item) {
+        if (item == null || item.isEmpty()) return;
+        final java.util.concurrent.ConcurrentHashMap<Long, net.raphimc.viabedrock.protocol.model.BedrockItem> map =
+                ITEM_ENTITIES.computeIfAbsent(user, u -> new java.util.concurrent.ConcurrentHashMap<>());
+        if (map.size() > 512) map.clear();
+        map.put(runtimeId, item);
+    }
+
+    public static net.raphimc.viabedrock.protocol.model.BedrockItem takeItemEntity(final UserConnection user, final long runtimeId) {
+        final java.util.concurrent.ConcurrentHashMap<Long, net.raphimc.viabedrock.protocol.model.BedrockItem> map = ITEM_ENTITIES.get(user);
+        return map == null ? null : map.remove(runtimeId);
+    }
+
+    public static void emulatePickup(final UserConnection user, final net.raphimc.viabedrock.protocol.model.BedrockItem picked) {
+        try {
+            final InventoryTracker tracker = user.get(InventoryTracker.class);
+            if (tracker == null) return;
+            final net.raphimc.viabedrock.api.model.container.Container inv = tracker.getInventoryContainer();
+            int remaining = picked.amount();
+            for (int slot = 0; slot < inv.size() && remaining > 0; slot++) { // merge pass (slots 0-8 = hotbar first)
+                final net.raphimc.viabedrock.protocol.model.BedrockItem cur = inv.getItem(slot);
+                if (!cur.isEmpty() && cur.identifier() == picked.identifier() && cur.data() == picked.data()
+                        && cur.tag() == null && picked.tag() == null && cur.amount() < 64) {
+                    final int add = Math.min(64 - cur.amount(), remaining);
+                    final net.raphimc.viabedrock.protocol.model.BedrockItem upd = (net.raphimc.viabedrock.protocol.model.BedrockItem) cur.copy();
+                    upd.setAmount(cur.amount() + add);
+                    inv.setItem(slot, upd);
+                    remaining -= add;
+                }
+            }
+            for (int slot = 0; slot < inv.size() && remaining > 0; slot++) { // first-empty pass
+                if (inv.getItem(slot).isEmpty()) {
+                    final net.raphimc.viabedrock.protocol.model.BedrockItem ni = (net.raphimc.viabedrock.protocol.model.BedrockItem) picked.copy();
+                    ni.setAmount(remaining);
+                    inv.setItem(slot, ni);
+                    remaining = 0;
+                }
+            }
+            net.raphimc.viabedrock.ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO,
+                    "[VP+ diag] pickup emulated: item=" + picked.identifier() + " x" + picked.amount()
+                            + (remaining > 0 ? " (" + remaining + " didn't fit)" : ""));
+            PacketFactory.sendJavaContainerSetContent(user, tracker.getInventoryContainer());
+        } catch (Throwable e) {
+            net.raphimc.viabedrock.ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.WARNING, "[VP+] pickup emulation failed", e);
+        }
+    }
+
     // Knockback synthesis: remember the last big correction per connection so
     // storms of corrections can be converted into one velocity arc.
     public static final class LastCorrection {
