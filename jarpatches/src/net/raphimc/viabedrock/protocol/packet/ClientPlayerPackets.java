@@ -218,36 +218,6 @@ public class ClientPlayerPackets {
                             return;
                         }
                     }
-                    // VP+ knockback synthesis: a second large correction within 600ms is a
-                    // server-driven fling (knockback/explosion). Instead of chaining teleports,
-                    // send the client a velocity matching the server trajectory and let it fly
-                    // the arc; positions reconverge via later corrections.
-                    final net.raphimc.viabedrock.experimental.VppResync.LastCorrection vppLast =
-                            net.raphimc.viabedrock.experimental.VppResync.lastCorrection(wrapper.user());
-                    final long vppNow = System.currentTimeMillis();
-                    final boolean vppStorm = vppNow - vppLast.wallTime < 600 && tick > vppLast.tick;
-                    if (vppStorm) {
-                        final float vppTicks = Math.max(1, tick - vppLast.tick);
-                        final double vppVx = (position.x() - vppLast.x) / vppTicks;
-                        final double vppVy = (position.y() - vppLast.y) / vppTicks;
-                        final double vppVz = (position.z() - vppLast.z) / vppTicks;
-                        vppLast.wallTime = vppNow; vppLast.tick = tick;
-                        vppLast.x = position.x(); vppLast.y = position.y(); vppLast.z = position.z();
-                        if (Math.abs(vppVx) < 4 && Math.abs(vppVy) < 4 && Math.abs(vppVz) < 4) {
-                            ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
-                                    "[VP+ diag] correction tick=%d STORM -> velocity (%.2f, %.2f, %.2f)/tick", tick, vppVx, vppVy, vppVz));
-                            clientPlayer.setPosition(position);
-                            clientPlayer.setOnGround(onGround);
-                            final PacketWrapper vppMotion = PacketWrapper.create(ClientboundPackets26_1.SET_ENTITY_MOTION, wrapper.user());
-                            vppMotion.write(Types.VAR_INT, clientPlayer.javaId()); // entity id
-                            vppMotion.write(Types.LOW_PRECISION_VECTOR, new com.viaversion.viaversion.api.minecraft.Vector3d(vppVx, vppVy, vppVz)); // velocity
-                            vppMotion.send(BedrockProtocol.class);
-                            wrapper.cancel();
-                            return;
-                        }
-                    }
-                    vppLast.wallTime = vppNow; vppLast.tick = tick;
-                    vppLast.x = position.x(); vppLast.y = position.y(); vppLast.z = position.z();
                     ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
                             "[VP+ diag] correction tick=%d age=%d HARD teleport (history=%s)", tick, clientPlayer.age(), vppHist != null));
                     clientPlayer.setPosition(position);
@@ -638,7 +608,7 @@ public class ClientPlayerPackets {
             wrapper.write(BedrockTypes.UNSIGNED_VAR_LONG, (long) clientPlayer.age()); // tick
             wrapper.write(BedrockTypes.POSITION_3F, velocity); // delta
             if (clientPlayer.authInputData().contains(PlayerAuthInputPacket_InputData.PerformBlockActions)) {
-                ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.FINE, "[VP+ diag] sending "
+                ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, "[VP+ diag] sending "
                         + clientPlayer.authInputBlockActions().size() + " block action(s): "
                         + clientPlayer.authInputBlockActions().stream().map(a -> a.action().name()).toList());
                 wrapper.write(BedrockTypes.VAR_INT, clientPlayer.authInputBlockActions().size()); // player block actions count
