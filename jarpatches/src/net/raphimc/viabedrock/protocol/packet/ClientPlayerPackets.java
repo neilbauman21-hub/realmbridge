@@ -200,12 +200,15 @@ public class ClientPlayerPackets {
                             return;
                         }
                         if (vppErr < 4.0) {
+                            // Soften small persistent disagreements: apply a fraction per correction so
+                            // the client drifts to the server position instead of snapping.
+                            final float vppScale = vppErr < 1.5F ? 0.35F : 1.0F;
                             final Position3f vppAdjusted = new Position3f(
-                                    clientPlayer.position().x() + vppEx,
-                                    clientPlayer.position().y() + vppEy,
-                                    clientPlayer.position().z() + vppEz);
+                                    clientPlayer.position().x() + vppEx * vppScale,
+                                    clientPlayer.position().y() + vppEy * vppScale,
+                                    clientPlayer.position().z() + vppEz * vppScale);
                             ViaBedrock.getPlatform().getLogger().log(java.util.logging.Level.INFO, String.format(
-                                    "[VP+ diag] correction tick=%d err=%.3f ADJUSTED (delta applied at current pos)", tick, vppErr));
+                                    "[VP+ diag] correction tick=%d err=%.3f (ex=%.2f ey=%.2f ez=%.2f) ADJUSTED x%.2f", tick, vppErr, vppEx, vppEy, vppEz, vppScale));
                             clientPlayer.setPosition(vppAdjusted);
                             clientPlayer.setOnGround(onGround);
                             clientPlayer.writePlayerPositionPacketToClient(wrapper, Relative.union(Relative.ROTATION, Relative.VELOCITY), true);
@@ -550,6 +553,12 @@ public class ClientPlayerPackets {
             }
             if (prevInputFlags.contains(InputFlag.JUMP) && !clientPlayer.inputFlags().contains(InputFlag.JUMP)) {
                 clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.JumpReleasedRaw);
+            }
+            if (clientPlayer.inputFlags().contains(InputFlag.SPRINT) && !prevInputFlags.contains(InputFlag.SPRINT)) {
+                clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.StartSprinting); // VP+: server needs the transition to apply sprint speed
+            }
+            if (prevInputFlags.contains(InputFlag.SPRINT) && !clientPlayer.inputFlags().contains(InputFlag.SPRINT)) {
+                clientPlayer.addAuthInputData(PlayerAuthInputPacket_InputData.StopSprinting); // VP+
             }
             if (clientPlayer.inputFlags().contains(InputFlag.SHIFT) && !prevInputFlags.contains(InputFlag.SHIFT)) {
                 clientPlayer.setSneaking(true);
