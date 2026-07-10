@@ -56,6 +56,21 @@ public final class VppResync {
         return map == null ? null : map.get(tick);
     }
 
+    // Knockback synthesis: remember the last big correction per connection so
+    // storms of corrections can be converted into one velocity arc.
+    public static final class LastCorrection {
+        public long wallTime;
+        public long tick;
+        public float x, y, z;
+    }
+
+    private static final java.util.concurrent.ConcurrentHashMap<UserConnection, LastCorrection> LAST_CORRECTIONS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static LastCorrection lastCorrection(final UserConnection user) {
+        return LAST_CORRECTIONS.computeIfAbsent(user, u -> new LastCorrection());
+    }
+
     // Movement-correction deadband: suppress small server rewinds so the client
     // isn't visibly yanked, but periodically let one through to re-anchor, and
     // always apply large ones.
