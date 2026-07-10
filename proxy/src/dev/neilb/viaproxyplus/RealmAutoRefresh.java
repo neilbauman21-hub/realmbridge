@@ -74,6 +74,17 @@ public final class RealmAutoRefresh {
             return; // don't resolve for server-list pings
         }
 
+        try { // re-read the filter: the mod may have changed it while we run
+            if (this.configFile.exists()) {
+                final String onDisk = Files.readString(this.configFile.toPath(), StandardCharsets.UTF_8).trim();
+                if (!onDisk.equals(this.realmNameFilter)) {
+                    this.realmNameFilter = onDisk;
+                    this.cachedAddress = null;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
         final long now = System.currentTimeMillis();
         final String cached = this.cachedAddress;
         if (cached != null && now - this.cachedAt < CACHE_MILLIS) {

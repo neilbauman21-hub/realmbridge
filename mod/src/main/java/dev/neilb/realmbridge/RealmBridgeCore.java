@@ -21,6 +21,10 @@ public final class RealmBridgeCore {
     private final BridgeAuth auth = new BridgeAuth();
     private final ViaProxyRunner runner = new ViaProxyRunner();
 
+    {
+        Runtime.getRuntime().addShutdownHook(new Thread(this.runner::stop, "RealmBridge-Shutdown"));
+    }
+
     public BridgeAuth auth() {
         return this.auth;
     }

@@ -97,7 +97,17 @@ public final class ViaProxyRunner {
     /** Launches ViaProxy cli (blocking until the port is up; call off-thread). */
     public synchronized void start(final String netherNetAddress, final int accountIndex) throws Exception {
         if (this.isRunning()) {
-            return;
+            this.stop(); // restart with the fresh realm target/filter
+        }
+        // A bridge from a previous game session may still hold the port with a
+        // dead realm target; it would make us report ready while joins time out.
+        try (Socket probe = new Socket()) {
+            probe.connect(new InetSocketAddress("127.0.0.1", 25568), 300);
+            RealmBridgeCore.LOGGER.warn("Stale bridge holding {} - terminating it", BIND);
+            new ProcessBuilder("sh", "-c", "lsof -ti :25568 | xargs kill -9").start().waitFor();
+            Thread.sleep(500);
+        } catch (IOException ignored) {
+            // port free - the normal case
         }
         final String javaBin = Path.of(System.getProperty("java.home"), "bin", "java").toString();
         Files.createDirectories(this.installDir.resolve("logs"));
