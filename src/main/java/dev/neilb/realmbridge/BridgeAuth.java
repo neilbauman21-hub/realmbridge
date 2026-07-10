@@ -65,7 +65,7 @@ public final class BridgeAuth {
             Files.createDirectories(this.authFile.getParent());
             Files.writeString(this.authFile, GSON.toJson(BedrockAuthManager.toJson(this.authManager)), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            RealmBridgeClient.LOGGER.error("Failed to persist auth tokens", e);
+            RealmBridgeCore.LOGGER.error("Failed to persist auth tokens", e);
         }
     }
 
