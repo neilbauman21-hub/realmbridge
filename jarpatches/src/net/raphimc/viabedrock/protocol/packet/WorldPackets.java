@@ -541,7 +541,12 @@ public class WorldPackets {
                 lines.remove(lines.size() - 1);
             }
             final String text = lines.stream().reduce((a, b) -> a + '\n' + b).orElse("");
-            signTag.getCompoundTag(front ? "FrontText" : "BackText").putString("Text", text);
+            CompoundTag vppSideText = signTag.getCompoundTag(front ? "FrontText" : "BackText");
+            if (vppSideText == null) { // VP+: sign without existing text data (fresh/legacy sign)
+                vppSideText = new CompoundTag();
+                signTag.put(front ? "FrontText" : "BackText", vppSideText);
+            }
+            vppSideText.putString("Text", text);
 
             wrapper.write(BedrockTypes.BLOCK_POSITION, position); // position
             wrapper.write(BedrockTypes.NETWORK_TAG, signTag.copy()); // block entity tag
