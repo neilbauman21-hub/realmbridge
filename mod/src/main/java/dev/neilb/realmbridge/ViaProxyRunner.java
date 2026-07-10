@@ -68,7 +68,8 @@ public final class ViaProxyRunner {
 
     /**
      * Injects the mod's sign-in into ViaProxy's account store if it has no
-     * Bedrock account yet. Returns the 1-based index of the Bedrock account.
+     * Bedrock account yet. Returns the 0-based index of the Bedrock account
+     * (ViaProxy's --minecraft-account-index is 0-indexed).
      */
     public int ensureAccount(final JsonObject serializedAuth) throws IOException {
         final Path savesFile = this.installDir.resolve("saves.json");
@@ -79,7 +80,7 @@ public final class ViaProxyRunner {
         for (int i = 0; i < accounts.size(); i++) {
             final JsonObject account = accounts.get(i).getAsJsonObject();
             if (BEDROCK_ACCOUNT_TYPE.equals(account.has("accountType") ? account.get("accountType").getAsString() : "")) {
-                return i + 1;
+                return i;
             }
         }
         if (serializedAuth == null) {
@@ -90,7 +91,7 @@ public final class ViaProxyRunner {
         accounts.add(entry);
         root.add("accountsV4", accounts);
         Files.writeString(savesFile, GSON.toJson(root), StandardCharsets.UTF_8);
-        return accounts.size();
+        return accounts.size() - 1;
     }
 
     /** Launches ViaProxy cli (blocking until the port is up; call off-thread). */
