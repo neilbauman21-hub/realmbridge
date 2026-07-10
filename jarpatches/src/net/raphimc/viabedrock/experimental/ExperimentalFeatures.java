@@ -331,6 +331,12 @@ public class ExperimentalFeatures {
             }
 
             if (inventoryTransaction.actions() != null && !inventoryTransaction.actions().isEmpty()) {
+                for (InventoryActionData vppA : inventoryTransaction.actions()) {
+                    ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] tx action: source=" + vppA.source().type()
+                            + " containerId=" + vppA.source().containerId() + " slot=" + vppA.slot()
+                            + " from=" + (vppA.fromItem() == null || vppA.fromItem().isEmpty() ? "empty" : "item")
+                            + " to=" + (vppA.toItem() == null || vppA.toItem().isEmpty() ? "empty" : "item"));
+                }
                 for (InventoryActionData action : inventoryTransaction.actions()) {
                     if (action.source().type() == InventorySourceType.ContainerInventory) {
                         Container container = inventoryTracker.getContainerClientbound((byte) action.source().containerId(), null, null);

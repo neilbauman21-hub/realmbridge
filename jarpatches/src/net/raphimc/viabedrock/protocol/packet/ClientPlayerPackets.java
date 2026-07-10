@@ -201,8 +201,11 @@ public class ClientPlayerPackets {
                         }
                         if (vppErr < 4.0) {
                             // Soften small persistent disagreements: apply a fraction per correction so
-                            // the client drifts to the server position instead of snapping.
-                            final float vppScale = vppErr < 1.5F ? 0.35F : 1.0F;
+                            // the client drifts to the server position instead of snapping. While
+                            // airborne with a mostly-vertical error (falling physics mismatch), apply
+                            // almost nothing - the server re-anchors us on landing.
+                            final boolean vppAirborneY = !onGround && Math.abs(vppEy) > 0.5F * vppErr;
+                            final float vppScale = vppAirborneY ? 0.08F : (vppErr < 1.5F ? 0.35F : 1.0F);
                             final Position3f vppAdjusted = new Position3f(
                                     clientPlayer.position().x() + vppEx * vppScale,
                                     clientPlayer.position().y() + vppEy * vppScale,
