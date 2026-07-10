@@ -1,0 +1,32 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+    mavenCentral()
+    maven { name = 'Lenni0451'; url = 'https://maven.lenni0451.net/releases' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // Realms API + Microsoft auth (same library ViaProxy uses), bundled jar-in-jar
+    implementation include("net.raphimc:MinecraftAuth:${project.minecraftauth_version}")
+    include("net.lenni0451.commons:httpclient:1.9.2")
+    include("net.lenni0451.commons:gson:1.9.2")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}

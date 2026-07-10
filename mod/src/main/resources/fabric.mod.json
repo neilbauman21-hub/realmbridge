@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "realmbridge",
+  "version": "${version}",
+  "name": "RealmBridge",
+  "description": "Join Bedrock Realms from Java: enter a realm code in-game, RealmBridge handles auth and the protocol bridge.",
+  "authors": ["Neildude"],
+  "license": "GPL-3.0",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.neilb.realmbridge.RealmBridgeClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": ">=26.1",
+    "fabric-api": "*"
+  }
+}
