@@ -36,6 +36,31 @@ public final class VppResync {
         }
     }
 
+    // Movement-correction deadband: suppress small server rewinds so the client
+    // isn't visibly yanked, but periodically let one through to re-anchor, and
+    // always apply large ones.
+    private static final double CORRECTION_DEADBAND = 1.5;
+    private static final int MAX_SUPPRESSED_PER_WINDOW = 25;
+    private static long suppressWindowStart;
+    private static int suppressCount;
+
+    public static synchronized boolean shouldSuppressCorrection(final double dist) {
+        final long now = System.currentTimeMillis();
+        if (now - suppressWindowStart > 5_000) {
+            suppressWindowStart = now;
+            suppressCount = 0;
+        }
+        if (dist >= CORRECTION_DEADBAND) {
+            suppressCount = 0;
+            return false;
+        }
+        if (++suppressCount > MAX_SUPPRESSED_PER_WINDOW) {
+            suppressCount = 0;
+            return false;
+        }
+        return true;
+    }
+
     /** Milliseconds since this position was broken by the player, or -1 if not recent. */
     public static long brokenAgoMillis(final UserConnection user, final com.viaversion.viaversion.api.minecraft.BlockPosition pos) {
         final java.util.concurrent.ConcurrentHashMap<Long, Long> map = RECENT_BREAKS.get(user);

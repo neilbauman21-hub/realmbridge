@@ -181,6 +181,11 @@ public class BedrockProtocol extends StatelessTransitionProtocol<ClientboundBedr
                 ViaBedrock.getPlatform().getLogger().warning("Received unknown packet " + wrapper.getId() + " in state " + serverState + " with content: " + ByteBufUtil.hexDump(content));
                 throw CancelException.generate();
             }
+            switch (packet) {
+                case ADD_ITEM_ENTITY, TAKE_ITEM_ENTITY, CONTAINER_OPEN, ITEM_STACK_RESPONSE ->
+                        ViaBedrock.getPlatform().getLogger().log(Level.INFO, "[VP+ diag] recv " + packet + " (state=" + serverState + ")");
+                default -> { }
+            }
             if (serverState == State.LOGIN && !LOGIN_STATE_WHITELIST.contains(packet) && BEFORE_PLAY_STATE_WHITELIST.contains(packet)) { // Bedrock client can skip the login state
                 ViaBedrock.getPlatform().getLogger().warning("Skipping LOGIN state");
                 final PacketWrapper playStatus = PacketWrapper.create(ClientboundBedrockPackets.PLAY_STATUS, wrapper.user());
