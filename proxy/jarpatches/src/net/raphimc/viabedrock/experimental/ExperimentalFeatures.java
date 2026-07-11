@@ -339,8 +339,6 @@ public class ExperimentalFeatures {
             if (inventoryTransaction.legacyRequestId() != 0) {
                 return;
             }
-
-            boolean vppTouched = false;
             if (inventoryTransaction.actions() != null && !inventoryTransaction.actions().isEmpty()) {
                 for (InventoryActionData action : inventoryTransaction.actions()) {
                     ViaBedrock.getPlatform().getLogger().log(Level.FINE, "[VP+ diag] tx action: source=" + action.source().type()
@@ -357,16 +355,14 @@ public class ExperimentalFeatures {
                     if (container != null && action.toItem() != null && !action.toItem().isEmpty()) {
                         container.setItem(action.slot(), action.toItem());
                         PacketFactory.sendJavaContainerSetContent(wrapper.user(), container);
-                        vppTouched = true;
                     }
                 }
             }
 
-            // VP+: if no action produced an inventory write, push the current tracked player
-            // inventory so any server-side change still reaches the client promptly.
-            if (!vppTouched) {
-                PacketFactory.sendJavaContainerSetContent(wrapper.user(), inventoryTracker.getInventoryContainer());
-            }
+            // VP+: fallback push removed - it fired on every transaction, including the
+            // ones our own inventory clicks generate, resetting the client's cursor and
+            // making the inventory screen uninteractable. Pickup emulation, join content
+            // and the periodic sweep cover the sync needs.
         });
         protocol.registerClientbound(ClientboundBedrockPackets.SET_ENTITY_LINK, ClientboundPackets26_1.SET_PASSENGERS, wrapper -> {
             final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
@@ -374,6 +370,11 @@ public class ExperimentalFeatures {
             final EntityLink linkType = wrapper.read(BedrockTypes.ENTITY_LINK);
             final Entity vehicle = entityTracker.getEntityByUid(linkType.fromEntityUniqueId());
             final Entity passenger = entityTracker.getEntityByUid(linkType.toEntityUniqueId());
+
+            if (vehicle == null || passenger == null) { // VP+: link references an untracked entity
+                wrapper.cancel();
+                return;
+            }
 
             // TODO: Handle Passenger type if needed
             switch (linkType.type()) {
